@@ -2,7 +2,7 @@
 
 **Estação de Leitura** é um e-commerce de livros físicos, com a proposta de oferecer **venda e aluguel** de Livros. Inspirado nas antigas livrarias e estações de trem, o site busca trazer uma experiência aconchegante, nostálgica e funcional.
 
-## Este projeto foi desenvolvido para a disciplina de Programação Web, com o objetivo de praticar o uso do framework Django e a criação de sistemas completos com banco de dados, templates e área administrativa
+- Este projeto foi desenvolvido para a disciplina de Programação Web, com o objetivo de praticar o uso do framework Django e a criação de sistemas completos com banco de dados, templates e área administrativa
 
 
 ## 📌 Objetivo do Sistema
@@ -17,7 +17,7 @@
 - 🔎 Catálogo por categorias
 - 🔐 Área administrativa com Django Admin
 
-##👤 Atores principais:
+## 👤 Atores principais:
 
 - Usuário (Cliente): pessoa que acessa o site para alugar ou comprar livros.
 - Administrador (Loja): gerencia os livros, pedidos e usuários pelo painel administrativo do Django.
