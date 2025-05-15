@@ -17,6 +17,14 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from livraria import views
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', views.home, name='home'),  # Página inicial
+    path('menu/', views.menu, name='menu'),
+    path('alugar/', views.alugar, name='alugar'),
+    path('about/', views.about, name='about'),
+    path('book/', views.book, name='book'),
 ]
