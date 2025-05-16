@@ -1,0 +1,10 @@
+# Ambiente virtual
+virtual/
+
+# Arquivos Python compilados
+__pycache__/
+*.pyc
+
+# Arquivos do sistema Windows
+Thumbs.db
+.DS_Store
