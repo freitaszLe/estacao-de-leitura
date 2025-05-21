@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sobre Nós - Estação Literária{% endblock %}
+
+{% block content %}
+<section class="about_section layout_padding">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6">
+        <div class="img-box">
+          <img src="{% static 'images/about-img.png' %}" alt="">
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="detail-box">
+          <div class="heading_container">
+            <h2>Sobre nossa Livraria</h2>
+          </div>
+          <p>
+            Essa Livraria online foi criada com a proposta de oferecer venda e aluguel de Livros.
+            Inspirado nas antigas livrarias e estações de trem, o site busca trazer uma experiência aconchegante,
+            nostálgica e funcional.
+          </p>
+          <a href="#">Read More</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
