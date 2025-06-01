@@ -1,4 +1,5 @@
 {% load static %}
+
 <!DOCTYPE html>
 <html>
 
@@ -75,7 +76,7 @@
               <a href="" class="user_link">
                 <i class="fa fa-user" aria-hidden="true"></i>
               </a>
-              <a class="cart_link" href="/livraria/templates/carrinho.html">
+              <a class="cart_link" href="{% url 'livros:ver_carrinho' %}">
                 <svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 456.029 456.029" style="enable-background:new 0 0 456.029 456.029;" xml:space="preserve">
                   <g>
                     <g>
@@ -373,6 +374,101 @@
   </section>
   <!-- end offer section -->
 
+<section class="food_section layout_padding">
+  <div class="container">
+    <div class="heading_container heading_center">
+      <h2>A Venda</h2>
+    </div>
+
+    <ul class="filters_menu">
+      <li class="active" data-filter="*">Todos</li>
+      {% for genero in generos %}
+        <li data-filter=".{{ genero.nome|slugify }}">{{ genero.nome }}</li>
+      {% endfor %}
+    </ul>
+
+    <div class="filters-content">
+      <div class="row grid">
+        {% for livro in livros_venda %}
+        <div class="col-sm-6 col-lg-4 all {{ livro.genero.nome|slugify }}">
+          <div class="box">
+            <div>
+              <div class="img-box">
+                {% if livro.capa %}
+                  <img src="{{ livro.capa.url }}" alt="Capa de {{ livro.titulo }}" style="max-height: 200px; width: auto;">
+                {% else %}
+                  <img src="{% static 'images/capa-padrao.jpg' %}" alt="Capa padrão" style="max-height: 200px; width: auto;">
+                {% endif %}
+              </div>
+              <div class="detail-box {{ livro.genero.nome|slugify }}">
+                <h5>{{ livro.titulo }}</h5>
+                <p>{{ livro.descricao|truncatewords:20 }}</p>
+                <div class="options">
+                  <h6>R$ {{ livro.preco_venda }}</h6>
+                  <a href="{% url 'livros:detalhes_livro' livro.id %}">
+                    <svg> <!-- ícone carrinho --> </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <p>Nenhum livro à venda disponível.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="food_section layout_padding">
+  <div class="container">
+    <div class="heading_container heading_center">
+      <h2>Para Alugar</h2>
+    </div>
+
+    <ul class="filters_menu">
+      <li class="active" data-filter="*">Todos</li>
+      {% for genero in generos %}
+        <li data-filter=".{{ genero.nome|slugify }}">{{ genero.nome }}</li>
+      {% endfor %}
+    </ul>
+
+    <div class="filters-content">
+      <div class="row grid">
+        {% for livro in livros_aluguel %}
+        <div class="col-sm-6 col-lg-4 all {{ livro.genero.nome|slugify }}">
+          <div class="box">
+            <div>
+              <div class="img-box">
+                {% if livro.capa %}
+                  <img src="{{ livro.capa.url }}" alt="Capa de {{ livro.titulo }}" style="max-height: 200px; width: auto;">
+                {% else %}
+                  <img src="{% static 'images/capa-padrao.jpg' %}" alt="Capa padrão" style="max-height: 200px; width: auto;">
+                {% endif %}
+              </div>
+              <div class="detail-box {{ livro.genero.nome|slugify }}">
+                <h5>{{ livro.titulo }}</h5>
+                <p>{{ livro.descricao|truncatewords:20 }}</p>
+                <div class="options">
+                  <h6>R$ {{ livro.preco_aluguel }} (aluguel)</h6>
+                  <a href="{% url 'livros:detalhes_livro' livro.id %}">
+                    <svg> <!-- ícone carrinho --> </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <p>Nenhum livro para aluguel disponível.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+  
   <!-- food section -->
    
   <section class="food_section layout_padding">
