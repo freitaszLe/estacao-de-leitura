@@ -15,24 +15,31 @@
         </h2>
       </div>
 
-      <ul class="filters_menu">
-        <li class="active" data-filter="*">Romance</li>
-        <li data-filter=".burger">Suspense</li>
-        <li data-filter=".pizza">Terror</li>
-        <li data-filter=".pasta">Nacional</li>
-        <li data-filter=".fries">Juvenil</li>
-      </ul>
+        <ul class="filters_menu">
+          <li class="active" data-filter="*">Todos</li>
+          {% for genero in generos %}
+            <li data-filter=".{{ genero.nome|slugify }}">{{ genero.nome }}</li>
+          {% endfor %}
+        </ul>
 
       <div class="filters-content">
         <div class="row grid"> 
-          <div class="col-sm-6 col-lg-4 all pizza">
+          {% for livro in livros %}
+          <div class="col-sm-6 col-lg-4 all {{ livro.genero.nome|slugify }}">
+            
             <div class="box">
               <div>
+                
                 <div class="img-box">
-                  <img src="{% static 'images/livro_OrgulhoEPreconceito.jpg' %}" alt="">
+                    {% if livro.capa %}
+                      <img src="{{ livro.capa.url }}" alt="Capa de {{ livro.titulo }}" style="max-height: 200px; width: auto;">
+                    {% else %}
+                      <img src="{% static 'images/capa-padrao.jpg' %}" alt="Capa padrão" style="max-height: 200px; width: auto;">
+                    {% endif %}
                 </div>
-                {% for livro in livros %}
-                <div class="detail-box {{ livro.genero.nome|slugify }}">
+
+                <div class="detail-box {{ livro.genero.nome|slugify }}">      
+                  
                   <h5>{{ livro.titulo }}</h5>
                   <p>{{ livro.descricao|truncatewords:20 }}</p>
                   <div class="options">
@@ -93,15 +100,17 @@
                     </a>
                   </div>
                 </div>
-                {% empty %}
-                  <p>Nenhum livro disponível.</p>
-                {% endfor %}
+                
+                
               </div>
             </div>
+              
           </div>
+          {% empty %}
+                  <p>Nenhum livro disponível.</p>
+          {% endfor %}
+        </div>
           <div class="col-sm-6 col-lg-4 all pasta">
-            <div class="box">
-      </div>
       <div class="btn-box">
         <a href="">
           View More
@@ -111,5 +120,5 @@
   </section>
 
   <!-- end food section -->
-
+{% include 'includes/footer.html' %}
   {% endblock %}
