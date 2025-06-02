@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Carrinho - Estação Literária{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Seu Carrinho</h2>
+
+    {% if messages %}
+        <div class="alert alert-info">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if livros %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Capa</th>
+                    <th>Título</th>
+                    <th>Autor</th>
+                    <th>Preço</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for livro in livros %}
+                <tr>
+                    <td>
+                        {% if livro.capa %}
+                            <img src="{{ livro.capa.url }}" alt="{{ livro.titulo }}" width="60">
+                        {% else %}
+                            <span>Sem capa</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ livro.titulo }}</td>
+                    <td>{{ livro.autor }}</td>
+                    <td>
+                        {% if livro.preco_venda %}
+                            R$ {{ livro.preco_venda }}
+                        {% elif livro.preco_aluguel %}
+                            R$ {{ livro.preco_aluguel }} (aluguel)
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a class="btn btn-danger btn-sm" href="{% url 'livros:remover_do_carrinho' livro.id %}">Remover</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="mt-3">
+            <h4>Total: <strong>R$ {{ total }}</strong></h4>
+
+            <form method="post" action="{% url 'livros:finalizar_compra' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success">Finalizar Compra</button>
+            </form>
+        </div>
+
+        <a class="btn btn-primary mt-3" href="{% url 'livros:comprar' %}">Voltar às compras</a>
+    {% else %}
+        <p>Seu carrinho está vazio.</p>
+        <a class="btn btn-primary" href="{% url 'livros:comprar' %}">Comprar livros</a>
+        <a class="btn btn-secondary" href="{% url 'livros:alugar' %}">Alugar livros</a>
+    {% endif %}
+</div>
+{% endblock %}

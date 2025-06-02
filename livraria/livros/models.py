@@ -12,7 +12,7 @@ class Livro(models.Model):
     autor = models.CharField(max_length=150)
     descricao = models.TextField(blank=True)
     genero = models.ForeignKey(Genero, on_delete=models.SET_NULL, null=True)
-    capa = models.ImageField(upload_to='capas/', blank=True, null=True)  # imagem da capa
+    capa = models.ImageField(upload_to='capas/', blank=True, null=True)
     preco_venda = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     preco_aluguel = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     disponivel_para_venda = models.BooleanField(default=True)
