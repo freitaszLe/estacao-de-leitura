@@ -19,5 +19,11 @@ class Livro(models.Model):
     disponivel_para_aluguel = models.BooleanField(default=True)
     estoque = models.PositiveIntegerField(default=0)  # Quantidade disponível
 
+    # --- NOVOS CAMPOS ---
+    em_destaque = models.BooleanField(default=False)
+    total_vendas = models.PositiveIntegerField(default=0)
+    total_alugueis = models.PositiveIntegerField(default=0)
+    # --------------------
+
     def __str__(self):
         return self.titulo

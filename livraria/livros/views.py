@@ -1,16 +1,31 @@
 from django.shortcuts import redirect, render, get_object_or_404
 from .models import Livro, Genero
 from django.contrib import messages
+from django.db.models import F
 
 def home(request):
-    livros_venda = Livro.objects.filter(preco_venda__isnull=False)
-    livros_aluguel = Livro.objects.filter(preco_aluguel__isnull=False)
+
+    
+    # Busca livros marcados como "em_destaque" para o carrossel
+    livros_destaque = Livro.objects.filter(em_destaque=True)
+
+    # Busca os 10 livros mais vendidos, ordenando pelo campo total_vendas
+    livros_mais_vendidos = Livro.objects.filter(disponivel_para_venda=True).order_by('-total_vendas')[:10]
+
+    # Busca os 10 livros mais alugados, ordenando pelo campo total_alugueis
+    livros_mais_alugados = Livro.objects.filter(disponivel_para_aluguel=True).order_by('-total_alugueis')[:10]
+    
     generos = Genero.objects.all()
-    return render(request, 'home.html', {
-        'livros_venda': livros_venda,
-        'livros_aluguel': livros_aluguel,
+
+    context = {
+        'livros_destaque': livros_destaque,
+        'livros_mais_vendidos': livros_mais_vendidos,
+        'livros_mais_alugados': livros_mais_alugados,
         'generos': generos
-    })
+    }
+    return render(request, 'home.html', context)
+
+
 
 
 def comprar(request):
@@ -68,8 +83,18 @@ def ver_carrinho(request):
         'total': total
     })
 
+
 def finalizar_compra(request):
     if request.method == 'POST':
+        carrinho_ids = request.session.get('carrinho', [])
+        livros_comprados = Livro.objects.filter(id__in=carrinho_ids)
+
+        # Atualiza os contadores
+        for livro in livros_comprados:
+            livro.total_vendas = F('total_vendas') + 1
+            livro.estoque = F('estoque') - 1 # Diminui o estoque
+            livro.save()
+
         request.session['carrinho'] = []
         messages.success(request, "Compra finalizada com sucesso!")
         return redirect('livros:comprar')
