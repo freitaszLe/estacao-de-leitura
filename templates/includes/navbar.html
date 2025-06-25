@@ -1,38 +1,49 @@
 {% load static %}
+
 <header class="header_section">
-    <div class="container">
-      <nav class="navbar navbar-expand-lg custom_nav-container">
-        <a class="navbar-brand" href="{% url 'home' %}">
-          <span>Estação Literária</span>
-        </a>
-  
-        <button class="navbar-toggler" type="button" data-toggle="collapse"
-          data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-          aria-expanded="false" aria-label="Toggle navigation">
-          <span class=""> </span>
-        </button>
-  
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul class="navbar-nav mx-auto">
-        <li class="nav-item"><a class="nav-link" href="{% url 'livros:comprar' %}">Comprar</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'livros:alugar' %}">Alugar</a></li>
+  <div class="container">
+    <nav class="navbar navbar-expand-lg custom_nav-container">
+      <a class="navbar-brand" href="{% url 'livros:home' %}">
+        <span>Estação Literária</span>
+      </a>
 
+      <button class="navbar-toggler" type="button" data-toggle="collapse"
+        data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+        aria-expanded="false" aria-label="Toggle navigation">
+        <span class=""> </span>
+      </button>
 
-            
-
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mx-auto">
+          <li class="nav-item"><a class="nav-link" href="{% url 'livros:comprar' %}">Comprar</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'livros:alugar' %}">Alugar</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Sobre Nós</a></li>
           </ul>
-          <div class="user_option">
-            <a href="#" class="user_link"><i class="fa fa-user" aria-hidden="true"></i></a>
-            <a class="cart_link" href="#"><i class="fa fa-shopping-cart"></i></a>
-            <form class="form-inline">
-              <button class="btn my-2 my-sm-0 nav_search-btn" type="submit">
-                <i class="fa fa-search" aria-hidden="true"></i>
-              </button>
-            </form>
-            <a href="#" class="order_online">Order Online</a>
-          </div>
+
+        <div class="user_option">
+
+          {% if user.is_authenticated %}
+            <span class="navbar-text text-white mr-3">Olá, {{ user.username }}!</span>
+            <a href="{% url 'livros:historico_pedidos' %}" class="btn btn-outline-light btn-sm mr-2">Meus Pedidos</a>
+            <a href="{% url 'logout' %}" class="btn btn-secondary btn-sm">Sair</a>
+          
+          {% else %}
+            <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm mr-2">Entrar</a>
+            <a href="{% url 'livros:register' %}" class="btn btn-light btn-sm">Cadastre-se</a>
+          {% endif %}
+
+          <a class="cart_link ml-3" href="{% url 'livros:ver_carrinho' %}">
+            <i class="fa fa-shopping-cart" aria-hidden="true"></i>
+          </a>
+
+          <form class="form-inline ml-2">
+            <button class="btn my-2 my-sm-0 nav_search-btn" type="submit">
+              <i class="fa fa-search" aria-hidden="true"></i>
+            </button>
+          </form>
+
         </div>
-      </nav>
-    </div>
-  </header>
-  
+        </div>
+    </nav>
+  </div>
+</header>

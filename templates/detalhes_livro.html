@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %} detalhes_livro - Estação Literária{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-4">
+      {% if livro.capa %}
+        <img src="{{ livro.capa.url }}" class="img-fluid" alt="Capa do livro">
+      {% else %}
+        <img src="{% static 'default-cover.jpg' %}" class="img-fluid" alt="Sem capa">
+      {% endif %}
+    </div>
+    <div class="col-md-8">
+      <h2>{{ livro.titulo }}</h2>
+      <p><strong>Autor:</strong> {{ livro.autor }}</p>
+      <p><strong>Gênero:</strong> {{ livro.genero.nome }}</p>
+      <p><strong>Descrição:</strong> {{ livro.descricao }}</p>
+      <p><strong>Preço de venda:</strong> R$ {{ livro.preco_venda }}</p>
+      <p><strong>Preço de aluguel:</strong> R$ {{ livro.preco_aluguel }}</p>
+
+        {% if livro.disponivel_para_venda %}
+            <a href="{% url 'livros:adicionar_ao_carrinho' livro.id 'venda' %}" class="btn btn-success">
+                Comprar por R$ {{ livro.preco_venda }}
+            </a>
+        {% endif %}
+
+        {% if livro.disponivel_para_aluguel %}
+            <a href="{% url 'livros:adicionar_ao_carrinho' livro.id 'aluguel' %}" class="btn btn-info">
+                Alugar por R$ {{ livro.preco_aluguel }}
+            </a>
+        {% endif %}
+
+      <br><br>
+      <a href="{% url 'livros:comprar' %}" class="btn btn-secondary">Voltar</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

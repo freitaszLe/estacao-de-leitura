@@ -1,15 +1,17 @@
 from django.contrib import admin
 from django.urls import path, include
-from . import views
 from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('livros/', include(('livros.urls', 'livros'), namespace='livros')),
-    path('', views.home, name='home'),
-    path('sobre/', views.about, name='about'),
-    path('book/', views.book, name='cadastro'),
+    
+    # CORREÇÃO:
+    # Esta única linha agora controla a home e todas as outras páginas de livros.
+    # Removemos as linhas separadas para 'livros/' e a home errada.
+    path('contas/', include('django.contrib.auth.urls')), 
+    
+    path('', include('livros.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
