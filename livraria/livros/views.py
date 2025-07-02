@@ -2,6 +2,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from .models import Livro, Genero
 from django.contrib import messages
 from django.db.models import F
+from usuarios.models import Pedido, ItemPedido
 
 def home(request):
 
@@ -60,11 +61,31 @@ def detalhes_livro(request, id):
 
 
 
-def adicionar_ao_carrinho(request, livro_id):
-    carrinho = request.session.get('carrinho', [])
-    if livro_id not in carrinho:
-        carrinho.append(livro_id)
-        request.session['carrinho'] = carrinho
+def adicionar_ao_carrinho(request, livro_id, tipo):
+    carrinho = request.session.get('carrinho', {})
+
+    # ===== VERIFICAÇÃO DE SEGURANÇA ADICIONADA =====
+    # Se o carrinho da sessão não for um dicionário, força a criação de um novo.
+    if not isinstance(carrinho, dict):
+        carrinho = {}
+    # ===============================================
+
+    livro_id_str = str(livro_id)
+    livro = get_object_or_404(Livro, id=livro_id)
+
+    # O resto da função continua igual...
+    if tipo == 'venda' and livro.disponivel_para_venda:
+        carrinho[livro_id_str] = {'tipo': 'venda'}
+        messages.success(request, f"'{livro.titulo}' foi adicionado ao carrinho para compra.")
+    
+    elif tipo == 'aluguel' and livro.disponivel_para_aluguel:
+        carrinho[livro_id_str] = {'tipo': 'aluguel'}
+        messages.success(request, f"'{livro.titulo}' foi adicionado ao carrinho para aluguel.")
+        
+    else:
+        messages.error(request, "Ação inválida ou livro indisponível para esta operação.")
+
+    request.session['carrinho'] = carrinho
     return redirect('livros:ver_carrinho')
 
 def remover_do_carrinho(request, livro_id):
@@ -84,17 +105,71 @@ def ver_carrinho(request):
     })
 
 
+
+
 def finalizar_compra(request):
     if request.method == 'POST':
-        carrinho_ids = request.session.get('carrinho', [])
-        livros_comprados = Livro.objects.filter(id__in=carrinho_ids)
+        carrinho = request.session.get('carrinho', {})
+        # Pega apenas os itens de venda do carrinho
+        itens_venda_carrinho = {k: v for k, v in carrinho.items() if v['tipo'] == 'venda'}
 
-        # Atualiza os contadores
-        for livro in livros_comprados:
+        if not itens_venda_carrinho:
+            messages.error(request, "Não há itens para comprar no seu carrinho.")
+            return redirect('livros:ver_carrinho')
+
+        # Calcula o total apenas dos itens de venda
+        total_pedido = sum((get_object_or_404(Livro, id=int(k))).preco_venda or 0 for k in itens_venda_carrinho)
+        
+        # 1. CRIA O PEDIDO GERAL NO BANCO DE DADOS
+        pedido = Pedido.objects.create(usuario=request.user, total=total_pedido)
+        
+        # 2. CRIA OS ITENS DO PEDIDO, LIGANDO CADA LIVRO AO PEDIDO CRIADO
+        for livro_id_str, info in itens_venda_carrinho.items():
+            livro = get_object_or_404(Livro, id=int(livro_id_str))
+            ItemPedido.objects.create(
+                pedido=pedido, 
+                livro=livro, 
+                tipo_transacao='venda', 
+                preco=livro.preco_venda
+            )
+            # Atualiza estoque e contadores do livro
+            livro.estoque = F('estoque') - 1
             livro.total_vendas = F('total_vendas') + 1
-            livro.estoque = F('estoque') - 1 # Diminui o estoque
+            livro.save()
+        
+        # 3. Limpa apenas os itens comprados do carrinho na sessão
+        request.session['carrinho'] = {k: v for k, v in carrinho.items() if v['tipo'] != 'venda'}
+        messages.success(request, f"Compra do Pedido #{pedido.id} finalizada com sucesso!")
+        return redirect('usuarios:estante') # Redireciona para a estante para ver o resultado!
+
+
+def finalizar_aluguel(request):
+    if request.method == 'POST':
+        carrinho = request.session.get('carrinho', {})
+        itens_aluguel_carrinho = {k: v for k, v in carrinho.items() if v['tipo'] == 'aluguel'}
+
+        if not itens_aluguel_carrinho:
+            messages.error(request, "Não há itens para alugar no seu carrinho.")
+            return redirect('livros:ver_carrinho')
+            
+        total_pedido = sum((get_object_or_404(Livro, id=int(k))).preco_aluguel or 0 for k in itens_aluguel_carrinho)
+
+        # 1. CRIA O PEDIDO
+        pedido = Pedido.objects.create(usuario=request.user, total=total_pedido)
+        
+        # 2. CRIA OS ITENS DO PEDIDO
+        for livro_id_str, info in itens_aluguel_carrinho.items():
+            livro = get_object_or_404(Livro, id=int(livro_id_str))
+            ItemPedido.objects.create(
+                pedido=pedido, 
+                livro=livro, 
+                tipo_transacao='aluguel', 
+                preco=livro.preco_aluguel
+            )
+            livro.total_alugueis = F('total_alugueis') + 1
             livro.save()
 
-        request.session['carrinho'] = []
-        messages.success(request, "Compra finalizada com sucesso!")
-        return redirect('livros:comprar')
+        # 3. LIMPA OS ITENS DE ALUGUEL DO CARRINHO
+        request.session['carrinho'] = {k: v for k, v in carrinho.items() if v['tipo'] != 'aluguel'}
+        messages.success(request, f"Aluguel do Pedido #{pedido.id} finalizado com sucesso!")
+        return redirect('usuarios:estante')
