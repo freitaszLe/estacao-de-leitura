@@ -6,9 +6,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    # CORREÇÃO:
-    # Esta única linha agora controla a home e todas as outras páginas de livros.
-    # Removemos as linhas separadas para 'livros/' e a home errada.
+    path('contas/', include('usuarios.urls')),
     path('', include('livros.urls')),
 ]
 

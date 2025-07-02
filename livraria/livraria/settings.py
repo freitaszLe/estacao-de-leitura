@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'livraria',
     'livros',
+    'usuarios',
 ]
 
 MIDDLEWARE = [
@@ -102,6 +103,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+AUTH_USER_MODEL = 'usuarios.Cliente'
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/

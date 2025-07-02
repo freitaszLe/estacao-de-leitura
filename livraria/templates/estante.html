@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Minha Estante - Estação Literária{% endblock %}
+
+{% block content %}
+<section class="food_section layout_padding">
+    <div class="container">
+        <div class="heading_container heading_center">
+            <h2>
+                Minha Estante
+            </h2>
+            <p class="mt-2">Todos os livros que você já comprou ou alugou.</p>
+        </div>
+
+        <div class="row grid mt-5"> 
+            
+            {% for livro in livros_na_estante %}
+                <div class="col-sm-6 col-lg-4 all">
+                    <div class="box">
+                        <div>
+                            <div class="img-box" style="background: none;">
+                                <a href="{% url 'livros:detalhes_livro' livro.id %}">
+                                    <img src="{% if livro.capa %}{{ livro.capa.url }}{% else %}{% static 'images/capa-padrao.jpg' %}{% endif %}" alt="Capa de {{ livro.titulo }}" style="height: 300px; width: 100%; object-fit: contain;">
+                                </a>
+                            </div>
+                            <div class="detail-box">
+                                <h5>
+                                    <a href="{% url 'livros:detalhes_livro' livro.id %}" style="color: white;">
+                                        {{ livro.titulo }}
+                                    </a>
+                                </h5>
+                                <p>{{ livro.autor }}</p>
+                                <div class="options">
+                                    <a href="{% url 'livros:detalhes_livro' livro.id %}" class="btn btn-sm btn-outline-light">
+                                        Ver Detalhes
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <p class="text-center font-weight-bold">Sua estante está vazia. Comece a comprar ou alugar livros para montar sua coleção!</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
