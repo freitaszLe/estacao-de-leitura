@@ -11,7 +11,7 @@ urlpatterns = [
     path('comprar/', views.comprar, name='comprar'),
     path('alugar/', views.alugar, name='alugar'),
     path('livro/<int:id>/', views.detalhes_livro, name='detalhes_livro'),
-
+    path('/livraria/templates/about.html', views.home, name='about'),
     # URLs do Carrinho
     path('carrinho/', views.ver_carrinho, name='ver_carrinho'),
     
