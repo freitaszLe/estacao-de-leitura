@@ -21,18 +21,19 @@
       <p><strong>Descrição:</strong> {{ livro.descricao|linebreaks }}</p>
       
       <div class="mt-4">
-        {% if livro.disponivel_para_venda %}
+        {% if livro.disponivel_para_venda and livro.preco_venda is not None %}
             <a href="{% url 'livros:adicionar_ao_carrinho' livro.id 'venda' %}" class="btn btn-success btn-lg">
                 <i class="fa fa-shopping-cart"></i> Comprar por R$ {{ livro.preco_venda }}
             </a>
         {% endif %}
 
-        {% if livro.disponivel_para_aluguel %}
+        {% if livro.disponivel_para_aluguel and livro.preco_aluguel is not None %}
             <a href="{% url 'livros:adicionar_ao_carrinho' livro.id 'aluguel' %}" class="btn btn-info btn-lg ml-2">
                 <i class="fa fa-calendar-check-o"></i> Alugar por R$ {{ livro.preco_aluguel }}
             </a>
         {% endif %}
       </div>
+      
       <br><br>
       <a href="javascript:history.back()" class="btn btn-secondary">Voltar</a>
     </div>

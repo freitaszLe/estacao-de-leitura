@@ -40,19 +40,30 @@ def logout_view(request):
 
 @login_required
 def estante_view(request):
-    # Passo 1: Pegue todos os IDs de livros dos pedidos do usuário.
-    # O values_list('livro', flat=True) retorna uma lista de IDs, como: [1, 5, 2, 5, 1]
-    livros_ids = ItemPedido.objects.filter(pedido__usuario=request.user).values_list('livro', flat=True)
+    # 1. Busca todos os itens de pedidos do usuário, otimizando a busca com select_related
+    todos_os_itens = ItemPedido.objects.filter(pedido__usuario=request.user).order_by('-pedido__data_pedido').select_related('livro')
     
-    # Passo 2: Remova os IDs duplicados.
-    # O set() transforma a lista em um conjunto, removendo duplicatas: {1, 2, 5}
-    unique_livros_ids = set(livros_ids)
+    # Listas e conjuntos para separar os itens e evitar duplicatas
+    itens_comprados = []
+    ids_livros_comprados = set()
     
-    # Passo 3: Busque os objetos Livro correspondentes a esses IDs únicos.
-    livros_na_estante = Livro.objects.filter(id__in=unique_livros_ids)
-    
+    itens_alugados = []
+    ids_livros_alugados = set()
+
+    # 2. Itera sobre todos os itens e os separa nas listas corretas
+    for item in todos_os_itens:
+        # Adiciona à lista de COMPRADOS se for 'venda' e ainda não estiver na lista
+        if item.tipo_transacao == 'venda' and item.livro.id not in ids_livros_comprados:
+            itens_comprados.append(item)
+            ids_livros_comprados.add(item.livro.id)
+        # Adiciona à lista de ALUGADOS se for 'aluguel' e ainda não estiver na lista
+        elif item.tipo_transacao == 'aluguel' and item.livro.id not in ids_livros_alugados:
+            itens_alugados.append(item)
+            ids_livros_alugados.add(item.livro.id)
+
+    # 3. Envia as duas listas separadas para o template
     context = {
-        # Enviamos os objetos Livro diretamente para o template
-        'livros_na_estante': livros_na_estante
+        'itens_comprados': itens_comprados,
+        'itens_alugados': itens_alugados
     }
     return render(request, 'estante.html', context)
