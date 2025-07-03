@@ -4,48 +4,77 @@
 {% block title %}Minha Estante - Estação Literária{% endblock %}
 
 {% block content %}
-<section class="food_section layout_padding">
+<section class="layout_padding">
     <div class="container">
         <div class="heading_container heading_center">
-            <h2>
-                Minha Estante
-            </h2>
-            <p class="mt-2">Todos os livros que você já comprou ou alugou.</p>
+            <h2>Minha Estante</h2>
+            <p class="mt-2">Sua coleção pessoal de livros comprados e alugados.</p>
         </div>
 
-        <div class="row grid mt-5"> 
-            
-            {% for livro in livros_na_estante %}
-                <div class="col-sm-6 col-lg-4 all">
-                    <div class="box">
-                        <div>
-                            <div class="img-box" style="background: none;">
-                                <a href="{% url 'livros:detalhes_livro' livro.id %}">
-                                    <img src="{% if livro.capa %}{{ livro.capa.url }}{% else %}{% static 'images/capa-padrao.jpg' %}{% endif %}" alt="Capa de {{ livro.titulo }}" style="height: 300px; width: 100%; object-fit: contain;">
+        {% if not itens_comprados and not itens_alugados %}
+            <div class="col-12 text-center mt-5">
+                <p class="font-weight-bold">Sua estante está vazia.</p>
+                <a href="{% url 'livros:home' %}" class="btn btn-primary">Ver Livros</a>
+            </div>
+        {% else %}
+
+            {% if itens_comprados %}
+            <div class="mt-5">
+                <div class="heading_container">
+                    <h3>Meus Livros Comprados</h3>
+                </div>
+                <hr>
+                <div class="row mt-4"> 
+                    {% for item in itens_comprados %}
+                        <div class="col-lg-3 col-md-4 col-sm-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <a href="{% url 'livros:detalhes_livro' item.livro.id %}">
+                                    <img src="{% if item.livro.capa %}{{ item.livro.capa.url }}{% else %}{% static 'images/capa-padrao.jpg' %}{% endif %}" class="card-img-top p-3" alt="Capa de {{ item.livro.titulo }}" style="height: 300px; object-fit: contain;">
                                 </a>
-                            </div>
-                            <div class="detail-box">
-                                <h5>
-                                    <a href="{% url 'livros:detalhes_livro' livro.id %}" style="color: white;">
-                                        {{ livro.titulo }}
-                                    </a>
-                                </h5>
-                                <p>{{ livro.autor }}</p>
-                                <div class="options">
-                                    <a href="{% url 'livros:detalhes_livro' livro.id %}" class="btn btn-sm btn-outline-light">
-                                        Ver Detalhes
-                                    </a>
+                                <div class="card-body text-center">
+                                    <h5 class="card-title" style="font-size: 1rem;">
+                                        <a href="{% url 'livros:detalhes_livro' item.livro.id %}" class="text-dark">
+                                            {{ item.livro.titulo }}
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted" style="font-size: 0.9rem;">{{ item.livro.autor }}</p>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    {% endfor %}
                 </div>
-            {% empty %}
-                <div class="col-12">
-                    <p class="text-center font-weight-bold">Sua estante está vazia. Comece a comprar ou alugar livros para montar sua coleção!</p>
+            </div>
+            {% endif %}
+
+            {% if itens_alugados %}
+            <div class="mt-5">
+                <div class="heading_container">
+                    <h3>Meus Livros Alugados</h3>
                 </div>
-            {% endfor %}
-        </div>
+                <hr>
+                <div class="row mt-4"> 
+                    {% for item in itens_alugados %}
+                        <div class="col-lg-3 col-md-4 col-sm-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <a href="{% url 'livros:detalhes_livro' item.livro.id %}">
+                                    <img src="{% if item.livro.capa %}{{ item.livro.capa.url }}{% else %}{% static 'images/capa-padrao.jpg' %}{% endif %}" class="card-img-top p-3" alt="Capa de {{ item.livro.titulo }}" style="height: 300px; object-fit: contain;">
+                                </a>
+                                <div class="card-body text-center">
+                                    <h5 class="card-title" style="font-size: 1rem;">
+                                        <a href="{% url 'livros:detalhes_livro' item.livro.id %}" class="text-dark">
+                                            {{ item.livro.titulo }}
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted" style="font-size: 0.9rem;">{{ item.livro.autor }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+        {% endif %}
     </div>
 </section>
 {% endblock %}
