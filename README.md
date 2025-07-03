@@ -36,4 +36,5 @@ Clone o repositório:
 
 ```bash
 git clone https://github.com/seu-usuario/estacao-de-leitura.git
-cd estacao-de-leitura
+cd livraria
+python manage.py runserver
