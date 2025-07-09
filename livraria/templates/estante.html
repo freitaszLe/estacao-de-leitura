@@ -22,11 +22,11 @@
             <div class="mt-5">
                 <div class="heading_container">
                     <h3>Meus Livros Comprados</h3>
+                    <hr>
                 </div>
-                <hr>
                 <div class="row mt-4"> 
                     {% for item in itens_comprados %}
-                        <div class="col-lg-3 col-md-4 col-sm-6">
+                        <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
                             <div class="card h-100 border-0 shadow-sm">
                                 <a href="{% url 'livros:detalhes_livro' item.livro.id %}">
                                     <img src="{% if item.livro.capa %}{{ item.livro.capa.url }}{% else %}{% static 'images/capa-padrao.jpg' %}{% endif %}" class="card-img-top p-3" alt="Capa de {{ item.livro.titulo }}" style="height: 300px; object-fit: contain;">
@@ -44,37 +44,44 @@
                     {% endfor %}
                 </div>
             </div>
-            {% endif %}
-
-            {% if itens_alugados %}
+            {% endif %} {% if itens_alugados %}
             <div class="mt-5">
                 <div class="heading_container">
                     <h3>Meus Livros Alugados</h3>
+                    <hr>
                 </div>
-                <hr>
-                <div class="row mt-4"> 
+                <div class="row mt-4">
                     {% for item in itens_alugados %}
-                        <div class="col-lg-3 col-md-4 col-sm-6">
-                            <div class="card h-100 border-0 shadow-sm">
-                                <a href="{% url 'livros:detalhes_livro' item.livro.id %}">
-                                    <img src="{% if item.livro.capa %}{{ item.livro.capa.url }}{% else %}{% static 'images/capa-padrao.jpg' %}{% endif %}" class="card-img-top p-3" alt="Capa de {{ item.livro.titulo }}" style="height: 300px; object-fit: contain;">
-                                </a>
-                                <div class="card-body text-center">
-                                    <h5 class="card-title" style="font-size: 1rem;">
-                                        <a href="{% url 'livros:detalhes_livro' item.livro.id %}" class="text-dark">
-                                            {{ item.livro.titulo }}
-                                        </a>
-                                    </h5>
-                                    <p class="card-text text-muted" style="font-size: 0.9rem;">{{ item.livro.autor }}</p>
-                                </div>
+                        <div class="col-lg-4 col-md-6 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ item.livro.titulo }}</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">{{ item.livro.autor }}</h6>
+                                    <hr>
+                                    
+                                    {% if not item.devolvido %}
+                                        <p><strong>Devolver até:</strong> {{ item.data_devolucao_prevista|date:"d/m/Y" }}</p>
+
+                                        {% with multa=item.calcular_multa %}
+                                            {% if multa > 0 %}
+                                                <p class="text-danger"><strong>Multa por atraso: R$ {{ multa|floatformat:2 }}</strong></p>
+                                            {% else %}
+                                                <p class="text-success">Status: Dentro do prazo</p>
+                                            {% endif %}
+                                        {% endwith %}
+                                        
+                                        <form action="{% url 'usuarios:devolver_livro' item.id %}" method="POST" class="mt-3">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-primary btn-block">Marcar como Devolvido</button>
+                                        </form>
+                                    {% else %}
+                                        <p class="text-success font-weight-bold"><i class="fa fa-check-circle"></i> Devolvido com sucesso!</p>
+                                    {% endif %} </div>
                             </div>
                         </div>
                     {% endfor %}
                 </div>
             </div>
-            {% endif %}
-
-        {% endif %}
-    </div>
+            {% endif %} {% endif %} </div>
 </section>
-{% endblock %}
+{% endblock %} ```
