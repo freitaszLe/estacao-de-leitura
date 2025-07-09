@@ -1,91 +1,37 @@
 {% extends 'base.html' %}
 {% load static %}
-
-{% block title %}Carrinho - Estação Literária{% endblock %}
-
+{% block title %}Carrinho{% endblock %}
 {% block content %}
 <div class="container mt-5 mb-5">
     <h2>Seu Carrinho</h2>
-
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-info">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-
     {% if not itens_venda and not itens_aluguel %}
-        <p>Seu carrinho está vazio.</p>
-        <a class="btn btn-primary" href="{% url 'livros:comprar' %}">Comprar livros</a>
-        <a class="btn btn-secondary" href="{% url 'livros:alugar' %}">Alugar livros</a>
-    
-    {% else %}
-
+        {% else %}
         {% if itens_venda %}
-            <h3 class="mt-4">Livros para Comprar</h3>
-            <table class="table table-hover">
-                <thead class="thead-dark">
-                    <tr>
-                        <th>Capa</th>
-                        <th>Título</th>
-                        <th>Autor</th>
-                        <th>Preço</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for livro in itens_venda %}
-                    <tr>
-                        <td><img src="{% if livro.capa %}{{ livro.capa.url }}{% else %}{% static 'images/capa-padrao.jpg' %}{% endif %}" alt="{{ livro.titulo }}" width="60"></td>
-                        <td>{{ livro.titulo }}</td>
-                        <td>{{ livro.autor }}</td>
-                        <td>R$ {{ livro.preco_venda }}</td>
-                        <td><a class="btn btn-danger btn-sm" href="{% url 'livros:remover_do_carrinho' livro.id %}">Remover</a></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
             <div class="text-right">
                 <h4>Subtotal da Compra: <strong>R$ {{ total_venda }}</strong></h4>
-                <form method="post" action="{% url 'livros:finalizar_compra' %}" class="d-inline">
+                <form method="post" action="{% url 'usuarios:finalizar_compra' %}" class="d-inline">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-success">Finalizar Compra</button>
+                    <button type="submit" class="btn btn-success">Ir para Pagamento</button>
                 </form>
             </div>
-        {% endif %}
 
-        {% if itens_aluguel %}
-            <h3 class="mt-5">Livros para Alugar</h3>
-            <table class="table table-hover">
-                <thead class="thead-dark">
-                    <tr>
-                        <th>Capa</th>
-                        <th>Título</th>
-                        <th>Autor</th>
-                        <th>Preço</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for livro in itens_aluguel %}
-                    <tr>
-                        <td><img src="{% if livro.capa %}{{ livro.capa.url }}{% else %}{% static 'images/capa-padrao.jpg' %}{% endif %}" alt="{{ livro.titulo }}" width="60"></td>
-                        <td>{{ livro.titulo }}</td>
-                        <td>{{ livro.autor }}</td>
-                        <td>R$ {{ livro.preco_aluguel }}</td>
-                        <td><a class="btn btn-danger btn-sm" href="{% url 'livros:remover_do_carrinho' livro.id %}">Remover</a></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
             <div class="text-right">
                 <h4>Subtotal do Aluguel: <strong>R$ {{ total_aluguel }}</strong></h4>
-                <form method="post" action="{% url 'livros:finalizar_aluguel' %}" class="d-inline">
+                <form method="post" action="{% url 'usuarios:finalizar_aluguel' %}" class="d-inline">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-primary">Finalizar Aluguel</button>
+                    <button type="submit" class="btn btn-primary">Ir para Pagamento</button>
                 </form>
             </div>
         {% endif %}
-    
+        {% if itens_aluguel %}
+            <div class="text-right">
+                <h4>Subtotal do Aluguel: <strong>R$ {{ total_aluguel }}</strong></h4>
+                <form method="post" action="{% url 'usuarios:finalizar_aluguel' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">Ir para Pagamento</button>
+                </form>
+            </div>
+        {% endif %}
     {% endif %}
 </div>
 {% endblock %}

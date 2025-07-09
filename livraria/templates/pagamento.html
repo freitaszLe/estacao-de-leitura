@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Pagar com Pix{% endblock %}
+{% block content %}
+<div class="container mt-5 text-center">
+    <h2>Finalize seu Pagamento</h2>
+    <p>Use o QR Code ou o código Copia e Cola abaixo para pagar seu Pedido #{{ pedido.id }}.</p>
+    <hr>
+    <h4>Total: R$ {{ pedido.total }}</h4>
+
+    {% if pedido.pix_qr_code %}
+        <img src="data:image/jpeg;base64,{{ pedido.pix_qr_code }}" alt="PIX QR Code" class="img-fluid my-3" style="max-width: 300px;">
+    {% endif %}
+
+    {% if pedido.pix_copia_cola %}
+        <div class="form-group">
+            <label for="pixCopiaCola">Pix Copia e Cola:</label>
+            <textarea class="form-control" id="pixCopiaCola" rows="4" readonly>{{ pedido.pix_copia_cola }}</textarea>
+        </div>
+        <button class="btn btn-secondary" onclick="copiarPix()">Copiar Código</button>
+    {% endif %}
+
+    <div class="mt-4">
+        <p>Após o pagamento, o status do seu pedido será atualizado automaticamente.</p>
+        <a href="{% url 'usuarios:estante' %}" class="btn btn-primary">Ir para Minha Estante</a>
+    </div>
+</div>
+
+<script>
+function copiarPix() {
+    var copyText = document.getElementById("pixCopiaCola");
+    copyText.select();
+    copyText.setSelectionRange(0, 99999); // Para mobile
+    document.execCommand("copy");
+    alert("Código Pix copiado!");
+}
+</script>
+{% endblock %}

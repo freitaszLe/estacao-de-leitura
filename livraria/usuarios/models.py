@@ -14,14 +14,24 @@ class Cliente(AbstractUser):
 # --- ADICIONE OS MODELOS DE PEDIDO ABAIXO ---
 
 class Pedido(models.Model):
-    """Representa a 'capa' de um pedido, ligada a um usuário."""
-    # O ForeignKey agora aponta para o seu modelo Cliente
+    STATUS_CHOICES = [
+        ('PENDENTE', 'Pendente'),
+        ('PAGO', 'Pago'),
+        ('CANCELADO', 'Cancelado'),
+    ]
     usuario = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     data_pedido = models.DateTimeField(auto_now_add=True)
     total = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # --- NOVOS CAMPOS PARA PAGAMENTO ---
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDENTE')
+    payment_id = models.CharField(max_length=100, null=True, blank=True) # ID do pagamento no Mercado Pago
+    pix_qr_code = models.TextField(null=True, blank=True) # QR Code em base64
+    pix_copia_cola = models.TextField(null=True, blank=True)
+    # ----------------------------------
 
     def __str__(self):
-        return f"Pedido {self.id} de {self.usuario.username}"
+        return f"Pedido {self.id} de {self.usuario.username} - {self.status}"
 
 class ItemPedido(models.Model):
     """Representa um item específico dentro de um pedido."""
