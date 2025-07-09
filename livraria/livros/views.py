@@ -6,7 +6,8 @@ from django.contrib.auth.decorators import login_required # <-- IMPORTAÇÃO ADI
 # Importação dos modelos de ambos os aplicativos
 from .models import Livro, Genero
 from usuarios.models import Pedido, ItemPedido
-
+from datetime import timedelta
+from django.utils import timezone
 
 def home(request):
     # Busca livros marcados como "em_destaque" para o carrossel
@@ -139,6 +140,7 @@ def finalizar_compra(request):
 @login_required
 def finalizar_aluguel(request):
     if request.method == 'POST':
+        # ... (código existente para pegar o carrinho e calcular o total) ...
         carrinho = request.session.get('carrinho', {})
         itens_aluguel_carrinho = {k: v for k, v in carrinho.items() if v['tipo'] == 'aluguel'}
 
@@ -150,18 +152,26 @@ def finalizar_aluguel(request):
 
         pedido = Pedido.objects.create(usuario=request.user, total=total_pedido)
         
+        # --- ALTERAÇÃO PRINCIPAL AQUI ---
         for livro_id_str, info in itens_aluguel_carrinho.items():
             livro = get_object_or_404(Livro, id=int(livro_id_str))
+            
+            # Calcula a data de devolução para 30 dias a partir de hoje
+            data_devolucao = timezone.now().date() + timedelta(days=30)
+
             ItemPedido.objects.create(
                 pedido=pedido, 
                 livro=livro, 
                 tipo_transacao='aluguel', 
-                preco=livro.preco_aluguel
+                preco=livro.preco_aluguel,
+                data_devolucao_prevista=data_devolucao, # Salva a data de devolução
+                devolvido=False # Marca como não devolvido
             )
             livro.total_alugueis = F('total_alugueis') + 1
             livro.save(update_fields=['total_alugueis'])
 
+        # ... (resto da função para limpar o carrinho e redirecionar) ...
         request.session['carrinho'] = {k: v for k, v in carrinho.items() if v['tipo'] != 'aluguel'}
         request.session.modified = True
-        messages.success(request, f"Aluguel do Pedido #{pedido.id} finalizado com sucesso!")
+        messages.success(request, f"Aluguel (Pedido #{pedido.id}) finalizado com sucesso!")
         return redirect('usuarios:estante')

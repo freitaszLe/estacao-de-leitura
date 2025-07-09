@@ -1,4 +1,6 @@
 from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+
 from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required # Importe o decorador
@@ -67,3 +69,21 @@ def estante_view(request):
         'itens_alugados': itens_alugados
     }
     return render(request, 'estante.html', context)
+
+@login_required
+def devolver_livro(request, item_id):
+    # Adicionamos uma verificação para garantir que a ação só ocorra via POST, por segurança
+    if request.method == 'POST':
+        # Garante que o usuário só possa devolver um item que lhe pertence
+        item_pedido = get_object_or_404(ItemPedido, id=item_id, pedido__usuario=request.user)
+        
+        # Marca o item como devolvido e salva
+        if not item_pedido.devolvido:
+            item_pedido.devolvido = True
+            item_pedido.save()
+            messages.success(request, f"O livro '{item_pedido.livro.titulo}' foi marcado como devolvido.")
+        else:
+            messages.info(request, "Este livro já foi devolvido.")
+
+    # Redireciona de volta para a estante em qualquer caso
+    return redirect('usuarios:estante')
