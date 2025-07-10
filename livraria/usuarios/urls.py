@@ -15,8 +15,9 @@ urlpatterns = [
     path('devolver/<int:item_id>/', views.devolver_livro, name='devolver_livro'),
     
     # URLs de finalização de pedido e pagamento
-    path('finalizar-compra/', views.finalizar_compra, name='finalizar_compra'),
-    path('finalizar-aluguel/', views.finalizar_aluguel, name='finalizar_aluguel'),
     path('pagamento/<int:pedido_id>/', views.pagina_pagamento, name='pagina_pagamento'),
     path('webhook-mp/', views.webhook_mercado_pago, name='webhook_mercado_pago'),
+    path('processar-checkout/', views.processar_checkout, name='processar_checkout'),
+    path('processar-checkout/', views.processar_checkout, name='processar_checkout'),
+
 ]

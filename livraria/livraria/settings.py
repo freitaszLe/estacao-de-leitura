@@ -26,7 +26,11 @@ SECRET_KEY = 'django-insecure-g+&$3rh4rjz%4cuu$1!+cw#w052$721(l-7quz(0ml*x$3qb^6
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    'localhost',
+    '628089ce670c.ngrok-free.app', 
+]
 
 
 # Application definition
@@ -106,7 +110,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # --- CONFIGURAÇÕES DO MERCADO PAGO ---
 MERCADO_PAGO_ACCESS_TOKEN = 'APP_USR-5435062853564685-070916-08088136580f197e1a243b628a44d502-1642385041'
-SITE_URL = 'https://94731dfec1d8.ngrok-free.app'
+SITE_URL = 'https://628089ce670c.ngrok-free.app'
 
 AUTH_USER_MODEL = 'usuarios.Cliente'
 

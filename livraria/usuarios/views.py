@@ -95,6 +95,90 @@ def devolver_livro(request, item_id):
     return redirect('usuarios:estante')
 
 
+# usuarios/views.py
+
+@login_required
+def processar_checkout(request):
+    if request.method == 'POST':
+        # ... (toda a lógica para pegar os itens e calcular o total continua igual) ...
+        livro_ids_selecionados = request.POST.get('checkout_ids', '').split(',')
+        if not livro_ids_selecionados or livro_ids_selecionados == ['']:
+            messages.error(request, "Nenhum item selecionado para o pagamento.")
+            return redirect('livros:ver_carrinho')
+
+        carrinho = request.session.get('carrinho', {})
+        total_pedido = 0
+        items_list_para_mp = []
+        itens_para_processar = {}
+
+        for livro_id_str in livro_ids_selecionados:
+            if livro_id_str in carrinho:
+                info = carrinho[livro_id_str]
+                livro = get_object_or_404(Livro, id=int(livro_id_str))
+                preco_unitario = (livro.preco_venda or 0) if info['tipo'] == 'venda' else (livro.preco_aluguel or 0)
+                total_pedido += preco_unitario
+                itens_para_processar[livro_id_str] = info
+                items_list_para_mp.append({
+                    "id": str(livro.id), "title": livro.titulo,
+                    "description": f"Tipo: {info['tipo'].capitalize()}",
+                    "category_id": "books", "quantity": 1,
+                    "unit_price": float(preco_unitario)
+                })
+        
+        if total_pedido <= 0:
+            messages.error(request, "O valor do pedido deve ser maior que zero.")
+            return redirect('livros:ver_carrinho')
+
+        pedido = Pedido.objects.create(usuario=request.user, total=total_pedido, status='PENDENTE')
+        for livro_id_str, info in itens_para_processar.items():
+            livro = get_object_or_404(Livro, id=int(livro_id_str))
+            preco = livro.preco_venda if info['tipo'] == 'venda' else livro.preco_aluguel
+            data_devolucao = timezone.now().date() + timedelta(days=30) if info['tipo'] == 'aluguel' else None
+            ItemPedido.objects.create(pedido=pedido, livro=livro, tipo_transacao=info['tipo'], preco=preco, data_devolucao_prevista=data_devolucao)
+
+        sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+        
+        # --- CORREÇÃO NA ESTRUTURA DO payment_data ---
+        payment_data = {
+            "transaction_amount": round(float(total_pedido), 2),
+            "description": f"Pedido #{pedido.id} da Estação Literária",
+            "payment_method_id": "pix",
+            "payer": {
+                "email": request.user.email or 'test_user@test.com',
+                "first_name": request.user.first_name,
+                "last_name": request.user.last_name,
+            },
+            "notification_url": settings.SITE_URL + reverse('usuarios:webhook_mercado_pago'),
+            # A lista de 'items' agora vai dentro de 'additional_info'
+            "additional_info": {
+                "items": items_list_para_mp
+            }
+        }
+        # --- FIM DA CORREÇÃO ---
+
+        payment_response = sdk.payment().create(payment_data)
+        
+        if payment_response and payment_response.get("status") == 201:
+            # ... (resto da lógica de sucesso continua igual) ...
+            payment = payment_response.get("response", {})
+            pedido.payment_id = payment.get("id")
+            pedido.pix_qr_code = payment.get("point_of_interaction", {}).get("transaction_data", {}).get("qr_code_base64")
+            pedido.pix_copia_cola = payment.get("point_of_interaction", {}).get("transaction_data", {}).get("qr_code")
+            pedido.save()
+            request.session['carrinho'] = {k: v for k, v in carrinho.items() if k not in itens_para_processar}
+            request.session.modified = True
+            return redirect('usuarios:pagina_pagamento', pedido_id=pedido.id)
+        else:
+            # ... (resto da lógica de erro continua igual) ...
+            pedido.status = 'CANCELADO'
+            pedido.save()
+            error_message = "Provedor de pagamento recusou a transação. Verifique sua conta Mercado Pago ou tente com um valor maior."
+            if payment_response and isinstance(payment_response.get("response"), dict):
+                error_message = payment_response["response"].get("message", error_message)
+            messages.error(request, f"Falha no pagamento: {error_message}")
+            return redirect('livros:ver_carrinho')
+            
+    return redirect('livros:ver_carrinho')
 # --- Lógica de Pagamento (Centralizada aqui) ---
 @login_required
 def finalizar_compra(request):
@@ -113,65 +197,71 @@ def iniciar_pagamento(request, tipo_transacao):
         return redirect('livros:ver_carrinho')
 
     total_pedido = 0
-    for livro_id_str in itens_no_carrinho:
-        livro = get_object_or_404(Livro, id=int(livro_id_str))
-        total_pedido += (livro.preco_venda or 0) if tipo_transacao == 'venda' else (livro.preco_aluguel or 0)
+    # --- NOVA LÓGICA PARA CRIAR A LISTA DE ITENS DETALHADA ---
+    items_list_para_mp = []
     
-    # Verificação de segurança: não gerar pix para valor zerado
+    for livro_id_str, info in itens_no_carrinho.items():
+        livro = get_object_or_404(Livro, id=int(livro_id_str))
+        preco_unitario = (livro.preco_venda or 0) if tipo_transacao == 'venda' else (livro.preco_aluguel or 0)
+        total_pedido += preco_unitario
+
+        # Adiciona um dicionário detalhado para cada livro na lista
+        items_list_para_mp.append({
+            "id": str(livro.id),
+            "title": livro.titulo,
+            "description": f"Autor: {livro.autor} - Tipo: {info['tipo'].capitalize()}",
+            "category_id": "books", # Categoria genérica para livros
+            "quantity": 1,
+            "unit_price": float(preco_unitario)
+        })
+    
     if total_pedido <= 0:
         messages.error(request, "Não é possível processar um pedido com valor total zero.")
         return redirect('livros:ver_carrinho')
 
+    # Cria nosso pedido interno
     pedido = Pedido.objects.create(usuario=request.user, total=total_pedido, status='PENDENTE')
     for livro_id_str in itens_no_carrinho:
+        # ... (lógica para criar os ItemPedido continua a mesma)
         livro = get_object_or_404(Livro, id=int(livro_id_str))
-        preco = livro.preco_venda if tipo_transacao == 'venda' else livro.preco_aluguel
-        data_devolucao = timezone.now().date() + timedelta(days=30) if tipo_transacao == 'aluguel' else None
-        ItemPedido.objects.create(pedido=pedido, livro=livro, tipo_transacao=tipo_transacao, preco=preco, data_devolucao_prevista=data_devolucao)
+        preco = livro.preco_venda if carrinho[livro_id_str]['tipo'] == 'venda' else livro.preco_aluguel
+        data_devolucao = timezone.now().date() + timedelta(days=30) if carrinho[livro_id_str]['tipo'] == 'aluguel' else None
+        ItemPedido.objects.create(pedido=pedido, livro=livro, tipo_transacao=carrinho[livro_id_str]['tipo'], preco=preco, data_devolucao_prevista=data_devolucao)
 
+    # Configura a chamada para a API do Mercado Pago
     sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
     
     payment_data = {
-        "transaction_amount": round(float(total_pedido), 2), # Garante 2 casas decimais
+        "transaction_amount": round(float(total_pedido), 2),
         "description": f"Pedido #{pedido.id} da Estação Literária",
+        "items": items_list_para_mp, # <-- ADICIONAMOS A LISTA DETALHADA AQUI
         "payment_method_id": "pix",
         "payer": {
-            "email": request.user.email or 'test_user@test.com', # MP exige um email
-            "first_name": request.user.first_name or 'Test',
-            "last_name": request.user.last_name or 'User',
+            "email": request.user.email or "test_user@test.com",
+            "first_name": request.user.first_name,
+            "last_name": request.user.last_name,
         },
         "notification_url": settings.SITE_URL + reverse('usuarios:webhook_mercado_pago'),
     }
 
-    # --- INÍCIO DO DEBUG ---
-    print("--- DADOS ENVIADOS PARA O MERCADO PAGO ---")
-    print(json.dumps(payment_data, indent=4))
-    
+    # O resto da função continua exatamente igual...
     payment_response = sdk.payment().create(payment_data)
     payment = payment_response["response"]
     
-    print("\n--- RESPOSTA RECEBIDA DO MERCADO PAGO ---")
-    print(json.dumps(payment, indent=4))
-    # --- FIM DO DEBUG ---
-    
-    # Verifica se a resposta contém os dados do PIX
-    if "point_of_interaction" in payment and "transaction_data" in payment["point_of_interaction"]:
+    if "point_of_interaction" in payment:
         pedido.payment_id = payment.get("id")
         pedido.pix_qr_code = payment["point_of_interaction"]["transaction_data"].get("qr_code_base64")
         pedido.pix_copia_cola = payment["point_of_interaction"]["transaction_data"].get("qr_code")
         pedido.save()
-
         request.session['carrinho'] = {k: v for k, v in carrinho.items() if k not in itens_no_carrinho}
         request.session.modified = True
         return redirect('usuarios:pagina_pagamento', pedido_id=pedido.id)
     else:
-        # Se não houver dados do PIX, algo deu errado
+        # ... (lógica de erro)
         messages.error(request, "Não foi possível gerar o PIX. Verifique os logs do servidor.")
-        # Opcional: cancelar o pedido que ficou pendente
         pedido.status = 'CANCELADO'
         pedido.save()
-        return redirect('livros:ver_carrinho')
-    
+        return redirect('livros:ver_carrinho')   
 @login_required
 def pagina_pagamento(request, pedido_id):
     pedido = get_object_or_404(Pedido, id=pedido_id, usuario=request.user)
@@ -180,13 +270,37 @@ def pagina_pagamento(request, pedido_id):
 @csrf_exempt
 def webhook_mercado_pago(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        if data.get("type") == "payment":
-            payment_id = data.get("data", {}).get("id")
-            sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
-            payment_info = sdk.payment().get(payment_id)["response"]
-            pedido = Pedido.objects.get(payment_id=payment_info.get("id"))
-            if payment_info.get("status") == "approved":
-                pedido.status = 'PAGO'
-                pedido.save()
+        try:
+            data = json.loads(request.body)
+            
+            # A lógica agora verifica 'topic' em vez de 'type'
+            if data.get("topic") == "payment":
+                
+                # O ID do pagamento agora é extraído da URL do campo 'resource'
+                resource_url = data.get("resource")
+                if resource_url:
+                    payment_id = resource_url.split('/')[-1] # Pega a última parte da URL
+
+                    sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
+                    payment_info = sdk.payment().get(payment_id)["response"]
+                    
+                    # Encontra nosso pedido pelo ID do pagamento
+                    # Usamos 'get' dentro de um try-except para mais segurança
+                    try:
+                        pedido = Pedido.objects.get(payment_id=payment_info.get("id"))
+                        
+                        # Se o pagamento foi aprovado, atualiza o status do nosso pedido
+                        if payment_info.get("status") == "approved":
+                            if pedido.status != 'PAGO':
+                                pedido.status = 'PAGO'
+                                pedido.save()
+                                # Aqui é um ótimo lugar para enviar um e-mail de confirmação!
+                    except Pedido.DoesNotExist:
+                        # Opcional: Lidar com o caso de não encontrar o pedido
+                        pass
+
+        except json.JSONDecodeError:
+            return JsonResponse({"status": "error", "message": "Invalid JSON"}, status=400)
+
+    # Sempre retorne uma resposta 200 OK para o Mercado Pago
     return JsonResponse({"status": "ok"})
