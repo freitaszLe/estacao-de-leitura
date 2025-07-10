@@ -1,37 +1,167 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Carrinho{% endblock %}
-{% block content %}
-<div class="container mt-5 mb-5">
-    <h2>Seu Carrinho</h2>
-    {% if not itens_venda and not itens_aluguel %}
-        {% else %}
-        {% if itens_venda %}
-            <div class="text-right">
-                <h4>Subtotal da Compra: <strong>R$ {{ total_venda }}</strong></h4>
-                <form method="post" action="{% url 'usuarios:finalizar_compra' %}" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-success">Ir para Pagamento</button>
-                </form>
-            </div>
 
-            <div class="text-right">
-                <h4>Subtotal do Aluguel: <strong>R$ {{ total_aluguel }}</strong></h4>
-                <form method="post" action="{% url 'usuarios:finalizar_aluguel' %}" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-primary">Ir para Pagamento</button>
-                </form>
+{% block title %}Seu Carrinho - Estação Literária{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5 mb-5 px-md-5">
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-info">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    {% if not itens_venda and not itens_aluguel %}
+        <div class="text-center">
+            <p>Seu carrinho está vazio.</p>
+            <a class="btn btn-primary" href="{% url 'livros:home' %}">Ver Livros</a>
+        </div>
+    {% else %}
+    <div class="row">
+        <div class="col-lg-7">
+            <h3>Itens no Carrinho</h3>
+            <p class="text-muted">Selecione os itens que deseja finalizar.</p>
+            <div class="table-responsive">
+                <table class="table">
+                    <tbody>
+                        {% if itens_venda %}
+                        <tr class="table-secondary"><td colspan="3"><strong>PARA COMPRAR</strong></td></tr>
+                        {% for livro in itens_venda %}
+                        <tr id="item-{{livro.id}}">
+                            <td><img src="{% if livro.capa %}{{ livro.capa.url }}{% else %}{% static 'images/capa-padrao.jpg' %}{% endif %}" width="50"></td>
+                            <td>{{ livro.titulo }}<br><small class="text-muted">{{ livro.autor }}</small></td>
+                            <td class="text-right">
+                                <strong>R$ {{ livro.preco_venda }}</strong>
+                                <button class="btn btn-sm btn-primary ml-2 adicionar-checkout"
+                                    data-id="{{ livro.id }}"
+                                    data-titulo="{{ livro.titulo }}"
+                                    data-preco="{{ livro.preco_venda }}"
+                                    data-tipo="Compra">Adicionar</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% endif %}
+
+                        {% if itens_aluguel %}
+                        <tr class="table-secondary"><td colspan="3"><strong>PARA ALUGAR</strong></td></tr>
+                        {% for livro in itens_aluguel %}
+                        <tr id="item-{{livro.id}}">
+                            <td><img src="{% if livro.capa %}{{ livro.capa.url }}{% else %}{% static 'images/capa-padrao.jpg' %}{% endif %}" width="50"></td>
+                            <td>{{ livro.titulo }}<br><small class="text-muted">{{ livro.autor }}</small></td>
+                            <td class="text-right">
+                                <strong>R$ {{ livro.preco_aluguel }}</strong>
+                                <button class="btn btn-sm btn-info ml-2 adicionar-checkout"
+                                    data-id="{{ livro.id }}"
+                                    data-titulo="{{ livro.titulo }}"
+                                    data-preco="{{ livro.preco_aluguel }}"
+                                    data-tipo="Aluguel">Adicionar</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
-        {% endif %}
-        {% if itens_aluguel %}
-            <div class="text-right">
-                <h4>Subtotal do Aluguel: <strong>R$ {{ total_aluguel }}</strong></h4>
-                <form method="post" action="{% url 'usuarios:finalizar_aluguel' %}" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-primary">Ir para Pagamento</button>
-                </form>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">Resumo do Pedido</h3>
+                    <hr>
+                    <table class="table table-sm">
+                        <tbody id="checkout-tbody">
+                            </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="2" class="text-right"><strong>TOTAL:</strong></td>
+                                <td class="text-right"><strong id="checkout-total">R$ 0.00</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <form id="checkout-form" method="post" action="{% url 'usuarios:processar_checkout' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="checkout_ids" id="checkout-ids">
+                        <button id="btn-finalizar" type="submit" class="btn btn-success btn-block" disabled>Finalizar e Pagar</button>
+                    </form>
+                </div>
             </div>
-        {% endif %}
+        </div>
+    </div>
     {% endif %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkoutTbody = document.getElementById('checkout-tbody');
+    const checkoutTotalEl = document.getElementById('checkout-total');
+    const checkoutIdsInput = document.getElementById('checkout-ids');
+    const btnFinalizar = document.getElementById('btn-finalizar');
+    
+    let checkoutItems = {}; // Usar um objeto para facilitar a remoção
+
+    // Função para atualizar o total e o estado do botão
+    function atualizarCheckout() {
+        let total = 0;
+        let ids = [];
+        for (const id in checkoutItems) {
+            total += parseFloat(checkoutItems[id].preco);
+            ids.push(id);
+        }
+        checkoutTotalEl.textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+        checkoutIdsInput.value = ids.join(',');
+        btnFinalizar.disabled = ids.length === 0;
+    }
+
+    // Adicionar item ao checkout
+    document.querySelectorAll('.adicionar-checkout').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const titulo = this.dataset.titulo;
+            const preco = this.dataset.preco;
+            const tipo = this.dataset.tipo;
+
+            // Adiciona ao objeto de checkout
+            checkoutItems[id] = { titulo, preco, tipo };
+
+            // Cria a nova linha na tabela de checkout
+            const novaLinha = document.createElement('tr');
+            novaLinha.id = `checkout-item-${id}`;
+            novaLinha.innerHTML = `
+                <td>${titulo}<br><small class="text-muted">${tipo}</small></td>
+                <td class="text-right">R$ ${parseFloat(preco).toFixed(2).replace('.', ',')}</td>
+                <td class="text-right"><button class="btn btn-sm btn-outline-danger remover-checkout" data-id="${id}">X</button></td>
+            `;
+            checkoutTbody.appendChild(novaLinha);
+
+            // Desativa o botão na lista da esquerda
+            this.disabled = true;
+            document.getElementById(`item-${id}`).style.opacity = '0.5';
+
+            atualizarCheckout();
+        });
+    });
+
+    // Remover item do checkout (usando delegação de evento)
+    checkoutTbody.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('remover-checkout')) {
+            const id = e.target.dataset.id;
+
+            // Remove do objeto de checkout
+            delete checkoutItems[id];
+            
+            // Remove a linha da tabela de checkout
+            document.getElementById(`checkout-item-${id}`).remove();
+
+            // Reativa o botão na lista da esquerda
+            const btnOriginal = document.querySelector(`.adicionar-checkout[data-id="${id}"]`);
+            if(btnOriginal) btnOriginal.disabled = false;
+            document.getElementById(`item-${id}`).style.opacity = '1';
+
+            atualizarCheckout();
+        }
+    });
+});
+</script>
 {% endblock %}
