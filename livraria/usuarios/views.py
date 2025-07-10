@@ -12,6 +12,9 @@ from datetime import timedelta
 from django.utils import timezone
 import mercadopago
 import json
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 from .forms import ClienteCreationForm, ClienteLoginForm
 from .models import Pedido, ItemPedido
@@ -138,7 +141,7 @@ def processar_checkout(request):
 
         sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
         
-        # --- CORREÇÃO NA ESTRUTURA DO payment_data ---
+        # --- ESTRUTURA DO payment_data ---
         payment_data = {
             "transaction_amount": round(float(total_pedido), 2),
             "description": f"Pedido #{pedido.id} da Estação Literária",
@@ -149,17 +152,15 @@ def processar_checkout(request):
                 "last_name": request.user.last_name,
             },
             "notification_url": settings.SITE_URL + reverse('usuarios:webhook_mercado_pago'),
-            # A lista de 'items' agora vai dentro de 'additional_info'
             "additional_info": {
                 "items": items_list_para_mp
             }
         }
-        # --- FIM DA CORREÇÃO ---
+        
 
         payment_response = sdk.payment().create(payment_data)
         
         if payment_response and payment_response.get("status") == 201:
-            # ... (resto da lógica de sucesso continua igual) ...
             payment = payment_response.get("response", {})
             pedido.payment_id = payment.get("id")
             pedido.pix_qr_code = payment.get("point_of_interaction", {}).get("transaction_data", {}).get("qr_code_base64")
@@ -169,7 +170,6 @@ def processar_checkout(request):
             request.session.modified = True
             return redirect('usuarios:pagina_pagamento', pedido_id=pedido.id)
         else:
-            # ... (resto da lógica de erro continua igual) ...
             pedido.status = 'CANCELADO'
             pedido.save()
             error_message = "Provedor de pagamento recusou a transação. Verifique sua conta Mercado Pago ou tente com um valor maior."
@@ -179,7 +179,7 @@ def processar_checkout(request):
             return redirect('livros:ver_carrinho')
             
     return redirect('livros:ver_carrinho')
-# --- Lógica de Pagamento (Centralizada aqui) ---
+# --- Lógica de Pagamento  ---
 @login_required
 def finalizar_compra(request):
     return iniciar_pagamento(request, 'venda')
@@ -197,7 +197,7 @@ def iniciar_pagamento(request, tipo_transacao):
         return redirect('livros:ver_carrinho')
 
     total_pedido = 0
-    # --- NOVA LÓGICA PARA CRIAR A LISTA DE ITENS DETALHADA ---
+    #  LISTA DE ITENS DETALHADA ---
     items_list_para_mp = []
     
     for livro_id_str, info in itens_no_carrinho.items():
@@ -205,7 +205,7 @@ def iniciar_pagamento(request, tipo_transacao):
         preco_unitario = (livro.preco_venda or 0) if tipo_transacao == 'venda' else (livro.preco_aluguel or 0)
         total_pedido += preco_unitario
 
-        # Adiciona um dicionário detalhado para cada livro na lista
+        
         items_list_para_mp.append({
             "id": str(livro.id),
             "title": livro.titulo,
@@ -219,7 +219,6 @@ def iniciar_pagamento(request, tipo_transacao):
         messages.error(request, "Não é possível processar um pedido com valor total zero.")
         return redirect('livros:ver_carrinho')
 
-    # Cria nosso pedido interno
     pedido = Pedido.objects.create(usuario=request.user, total=total_pedido, status='PENDENTE')
     for livro_id_str in itens_no_carrinho:
         # ... (lógica para criar os ItemPedido continua a mesma)
@@ -244,7 +243,6 @@ def iniciar_pagamento(request, tipo_transacao):
         "notification_url": settings.SITE_URL + reverse('usuarios:webhook_mercado_pago'),
     }
 
-    # O resto da função continua exatamente igual...
     payment_response = sdk.payment().create(payment_data)
     payment = payment_response["response"]
     
@@ -273,10 +271,8 @@ def webhook_mercado_pago(request):
         try:
             data = json.loads(request.body)
             
-            # A lógica agora verifica 'topic' em vez de 'type'
             if data.get("topic") == "payment":
                 
-                # O ID do pagamento agora é extraído da URL do campo 'resource'
                 resource_url = data.get("resource")
                 if resource_url:
                     payment_id = resource_url.split('/')[-1] # Pega a última parte da URL
@@ -284,8 +280,6 @@ def webhook_mercado_pago(request):
                     sdk = mercadopago.SDK(settings.MERCADO_PAGO_ACCESS_TOKEN)
                     payment_info = sdk.payment().get(payment_id)["response"]
                     
-                    # Encontra nosso pedido pelo ID do pagamento
-                    # Usamos 'get' dentro de um try-except para mais segurança
                     try:
                         pedido = Pedido.objects.get(payment_id=payment_info.get("id"))
                         
@@ -294,9 +288,7 @@ def webhook_mercado_pago(request):
                             if pedido.status != 'PAGO':
                                 pedido.status = 'PAGO'
                                 pedido.save()
-                                # Aqui é um ótimo lugar para enviar um e-mail de confirmação!
                     except Pedido.DoesNotExist:
-                        # Opcional: Lidar com o caso de não encontrar o pedido
                         pass
 
         except json.JSONDecodeError:

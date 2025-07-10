@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Comprovante do Pedido #{{ pedido.id }}</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #333;">
+    <h2>Olá, {{ pedido.usuario.first_name|default:pedido.usuario.username }}!</h2>
+    <p>O seu pedido <strong>#{{ pedido.id }}</strong> na Estação Literária foi confirmado com sucesso.</p>
+    <p>Você pode apresentar este e-mail ou o número do pedido para retirar seus produtos na loja física.</p>
+    <hr>
+    <h3>Resumo do Pedido</h3>
+    <ul>
+        <li><strong>Data:</strong> {{ pedido.data_pedido|date:"d/m/Y" }}</li>
+        <li><strong>Total Pago:</strong> R$ {{ pedido.total|floatformat:2 }}</li>
+    </ul>
+    <h4>Itens:</h4>
+    <table border="1" cellpadding="10" cellspacing="0" style="width: 100%;">
+        <thead>
+            <tr style="background-color: #f2f2f2;">
+                <th>Livro</th>
+                <th>Tipo</th>
+                <th>Preço</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in pedido.itens.all %}
+            <tr>
+                <td>{{ item.livro.titulo }}</td>
+                <td>{{ item.get_tipo_transacao_display }}</td>
+                <td>R$ {{ item.preco|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if tem_aluguel %}
+    <div style="margin-top: 20px; padding: 15px; border: 1px solid #c58940; background-color: #fffaf0;">
+        <h4 style="color: #c58940; margin-top: 0;">Aviso Importante para Itens Alugados</h4>
+        <p>O prazo para devolução dos livros alugados neste pedido é de <strong>30 dias</strong> a contar da data da compra.</p>
+        <p>Data limite para devolução: <strong>{{ data_limite_devolucao|date:"d/m/Y" }}</strong>.</p>
+    </div>
+    {% endif %}
+
+    <p style="margin-top: 30px;">Obrigado por comprar conosco!</p>
+    <p><strong>Equipe Estação Literária</strong></p>
+</body>
+</html>

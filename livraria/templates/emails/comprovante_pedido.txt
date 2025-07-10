@@ -1,0 +1,28 @@
+Olá, {{ pedido.usuario.first_name|default:pedido.usuario.username }}!
+
+O seu pedido #{{ pedido.id }} na Estação Literária foi confirmado com sucesso.
+
+Você pode apresentar este e-mail ou o número do pedido para retirar seus produtos na loja física.
+
+=====================================
+RESUMO DO PEDIDO
+=====================================
+Data: {{ pedido.data_pedido|date:"d/m/Y" }}
+Total Pago: R$ {{ pedido.total|floatformat:2 }}
+
+Itens:
+{% for item in pedido.itens.all %}
+- {{ item.livro.titulo }} ({{ item.get_tipo_transacao_display }}) - R$ {{ item.preco|floatformat:2 }}
+{% endfor %}
+-------------------------------------
+
+{% if tem_aluguel %}
+AVISO IMPORTANTE PARA ITENS ALUGADOS:
+O prazo para devolução dos livros alugados neste pedido é de 30 dias.
+Data limite para devolução: {{ data_limite_devolucao|date:"d/m/Y" }}.
+{% endif %}
+
+Obrigado por comprar conosco!
+
+Atenciosamente,
+Equipe Estação Literária
