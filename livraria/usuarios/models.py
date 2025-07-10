@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from livros.models import Livro # IMPORTANTE: Precisamos saber o que é um Livro
+from livros.models import Livro 
 from django.utils import timezone 
 
 class Cliente(AbstractUser):
@@ -11,7 +11,6 @@ class Cliente(AbstractUser):
     def __str__(self):
         return self.username
 
-# --- ADICIONE OS MODELOS DE PEDIDO ABAIXO ---
 
 class Pedido(models.Model):
     STATUS_CHOICES = [
@@ -23,12 +22,10 @@ class Pedido(models.Model):
     data_pedido = models.DateTimeField(auto_now_add=True)
     total = models.DecimalField(max_digits=10, decimal_places=2)
     
-    # --- NOVOS CAMPOS PARA PAGAMENTO ---
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDENTE')
     payment_id = models.CharField(max_length=100, null=True, blank=True) # ID do pagamento no Mercado Pago
     pix_qr_code = models.TextField(null=True, blank=True) # QR Code em base64
     pix_copia_cola = models.TextField(null=True, blank=True)
-    # ----------------------------------
 
     def __str__(self):
         return f"Pedido {self.id} de {self.usuario.username} - {self.status}"
@@ -44,7 +41,6 @@ class ItemPedido(models.Model):
     tipo_transacao = models.CharField(max_length=7, choices=TIPO_CHOICES)
     preco = models.DecimalField(max_digits=8, decimal_places=2)
 
-    # --- NOVOS CAMPOS PARA O ALUGUEL ---
     data_devolucao_prevista = models.DateField(null=True, blank=True)
     devolvido = models.BooleanField(default=False)
     # ------------------------------------
@@ -52,7 +48,6 @@ class ItemPedido(models.Model):
     def __str__(self):
         return f"{self.livro.titulo} no Pedido {self.pedido.id}"
 
-    # --- NOVA FUNÇÃO PARA CALCULAR A MULTA ---
     @property
     def calcular_multa(self):
         # A multa só se aplica a aluguéis não devolvidos e com prazo vencido
@@ -62,4 +57,4 @@ class ItemPedido(models.Model):
                 dias_atraso = (hoje - self.data_devolucao_prevista).days
                 multa = dias_atraso * 10.00 # R$ 10,00 por dia de atraso
                 return multa
-        return 0 # Retorna 0 se não houver multa
+        return 0 
